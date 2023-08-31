@@ -45,10 +45,26 @@ def presenting_the_game():
 
 def naming_the_players():
     """
-    "This function asks and stores the names of two players."
+    This function asks and stores the names of two players.
     """
-    player_one = input('Player one, please enter your name: \n')
-    player_two = input('Player Two, please enter your name: \n')
+    while True:  # Loop to keep asking for Player One's name until valid input is received
+        player_one = input('Player one, please enter your name: \n')
+        if len(player_one) > 20:
+            print("Error: Name too long, it should be a maximum of 20 characters.")
+        elif len(player_one.strip()) == 0:
+            print("Error: Blank space is not a valid name.")
+        else:
+            break  # Exit loop if input is valid
+
+    while True:  # Loop to keep asking for Player Two's name until valid input is received
+        player_two = input('Player Two, please enter your name: \n')
+        if len(player_two) > 20:
+            print("Error: Name too long, it should be a maximum of 20 characters.")
+        elif len(player_two.strip()) == 0:
+            print("Error: Blank space is not a valid name.")
+        else:
+            break  # Exit loop if input is valid
+
     return [player_one, player_two]
 
 
@@ -83,7 +99,7 @@ def get_valid_choice(target_number, dice_combinations):
             if target_number[0] not in valid_sums:
                 print("It seems you ran out of luck\n")
                 print("You pushed your luck too hard!!\n")
-                print("You will go back to the starting square for this turn.\n")
+                print("Go back to the starting square for this turn!\n")
                 return None
         elif dice_choice not in valid_sums:
             print(f"{dice_choice} is not a valid combination.\n")
