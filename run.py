@@ -30,6 +30,27 @@ board = SHEET.worksheet('board')
 data = board.get_all_values()
 
 
+def clear_board():
+    """
+    Clears the board on the Google Sheet to prepare for a new game.
+    The cells in the range from B3 to L14 are set to an empty string.
+    """
+    # Access the Google Sheet
+    worksheet_to_clear = SHEET.worksheet('board')
+
+    # Fetch the cell range
+    cell_list = worksheet_to_clear.range('B3:L14')
+
+    # Update each cell in the fetched range
+    for cell in cell_list:
+        cell.value = ''
+    
+    # Update the changed cells in batch
+    worksheet_to_clear.update_cells(cell_list)
+
+    print("Board cleared. All set for a new game!")
+
+
 def presenting_the_game():
     """
     This function prints introductory sentences.
@@ -83,30 +104,27 @@ def get_dice_combinations(numbers):
     return list(itertools.combinations(numbers, 2))
 
 
-def get_valid_choice(target_number, dice_combinations):
-    while True:
-        try:
-            dice_choice = int(input("""From those four numbers,
-            choose any two numbers and add them together, or enter your
-            target number if you already have one: \n"""))
-        except ValueError as error:
-            print(f"Invalid data: {error}, please try again.\n")
-            continue
-
-        valid_sums = [sum(comb) for comb in dice_combinations]
-
-        if target_number:
-            if target_number[0] not in valid_sums:
-                print("It seems you ran out of luck\n")
-                print("You pushed your luck too hard!!\n")
-                print("Go back to the starting square for this turn!\n")
-                return None
-        elif dice_choice not in valid_sums:
-            print(f"{dice_choice} is not a valid combination.\n")
-            print("Please try again.\n")
-            continue
+def get_valid_choice(target_number, dice_combinations, player):
+    valid_sums = [sum(comb) for comb in dice_combinations]
+    if target_number:
+        if target_number[0] in valid_sums:
+            print(f"Great {player}, your target number {target_number[0]} is valid for this round.")
+            return target_number[0]
         else:
-            return dice_choice
+            print(f"Sorry {player}, your target number {target_number[0]} is not valid this round.")
+            return None
+    else:
+        while True:
+            try:
+                dice_choice = int(input(f"""{player}, choose any two numbers and add them together.
+                This will be your target number for the rest of the game: \n"""))
+                if dice_choice in valid_sums:
+                    return dice_choice
+                else:
+                    print(f"{dice_choice} is not a valid sum. Please try again.\n")
+            except ValueError as error:
+                print(f"Invalid data: {error}, please try again.\n")
+                continue
 
 
 def should_continue_rolling():
@@ -125,9 +143,6 @@ def should_continue_rolling():
 
 
 def turn(target_number, player):
-    """
-    This function handles all actions that occur in each turn of the game.
-    """
     original_target_number = target_number.copy()
     scored = False
 
@@ -135,7 +150,7 @@ def turn(target_number, player):
         numbers = roll_dice()
         print(f"{player}, you rolled the following numbers: {numbers}\n")
         dice_combinations = get_dice_combinations(numbers)
-        dice_choice = get_valid_choice(target_number, dice_combinations)
+        dice_choice = get_valid_choice(target_number, dice_combinations, player)
 
         if dice_choice is None:
             return original_target_number, False
@@ -146,7 +161,7 @@ def turn(target_number, player):
             target_number[1] += 1
             scored = True
 
-        print(f'You chose the number {target_number[0]}\n')
+        print(f'{player}, you chose the number {target_number[0]}\n')
         print(f'You moved up to the square {target_number[1]}.\n')
 
         if not should_continue_rolling():
@@ -182,18 +197,21 @@ def did_anybody_win(player, coordinates):
         print("No one won this turn.\n")
         return False
 
-    winning_coordinates = [[2, 3], [3, 5], [4, 7], [5, 9], [6, 11], [7, 12],
-                           [8, 11], [9, 9], [10, 7], [11, 5], [12, 3]]
-    if coordinates in winning_coordinates:
-        print(f'Congratulations {player}!! You won the Game!!\n')
-        print("If you feel like playing again,\n")
-        print("clear all the values from the worksheet before starting.\n")
-        print("Meanwhile, be proud of your awesome victory;\n")
-        print("it's now on display for everyone to admire!\n")
-        return True
+    winning_coordinates = {2: 3, 3: 5, 4: 7, 5: 9, 6: 11, 7: 12,
+                           8: 11, 9: 9, 10: 7, 11: 5, 12: 3}
+
+    if coordinates[0] in winning_coordinates.keys():
+        if coordinates[1] >= winning_coordinates[coordinates[0]]:
+            print(f'Congratulations {player}!! You won the Game!!\n')
+            print("If you feel like playing again,\n")
+            print("clear all the values from the worksheet before starting.\n")
+            print("Meanwhile, be proud of your awesome victory;\n")
+            print("it's now on display for everyone to admire!\n")
+            return True
     else:
         print("Nobody won during this turn.\n")
         return False
+
 
 
 def main():
@@ -201,6 +219,7 @@ def main():
     This function acts as a control tower
     by calling all the other functions in the right order.
     """
+    clear_board()
     presenting_the_game()
     players = naming_the_players()
     target_numbers = [[], []]
